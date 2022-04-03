@@ -1,0 +1,7 @@
+[package]
+name = "fix-js-heap-limit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fuzzy-matcher = "0.3.7"
