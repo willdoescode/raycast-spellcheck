@@ -24,7 +24,7 @@ const download = async (url: string) => {
   }
 };
 
-export default function Command() {
+const Command = () => {
   const isM1 = os.cpus()[0].model.includes("Apple M1");
 
   if (!existsSync(ePath)) {
@@ -52,28 +52,31 @@ export default function Command() {
     >
       <List.Section title="Words" subtitle={state.results.length + ""}>
         {state.results.map((searchResult) => (
-          <SearchListItem key={searchResult.word} searchResult={searchResult} />
+          <SearchListItem key={searchResult} searchResult={searchResult} />
         ))}
       </List.Section>
     </List>
   );
 }
 
-function SearchListItem({ searchResult }: { searchResult: SearchResult }) {
+export default Command;
+
+
+const SearchListItem = ({ searchResult }: { searchResult: string }) => {
   return (
     <List.Item
-      title={searchResult.word}
+      title={searchResult}
       actions={
         <ActionPanel>
           <ActionPanel.Section>
             <Action.CopyToClipboard
               title="Copy Correct Word Spelling"
-              content={`${searchResult.word}`}
+              content={`${searchResult}`}
               shortcut={{ modifiers: ["cmd"], key: "." }}
             />
           </ActionPanel.Section>
             <Action title="Open In Dictionary" onAction={() => {
-              spawn('open', [`dict://${searchResult.word}`])
+              spawn('open', [`dict://${searchResult}`])
             }} />
         </ActionPanel>
       }
@@ -127,7 +130,7 @@ function useSearch() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function performSearch(searchText: string, _signal: AbortSignal): Promise<SearchResult[]> {
+const performSearch = async (searchText: string, _signal: AbortSignal): Promise<string[]> => {
   const search = execSync(`${ePath} ${searchText}`);
 
   const matching_words = [
@@ -136,18 +139,10 @@ async function performSearch(searchText: string, _signal: AbortSignal): Promise<
   matching_words.sort((a, b) => b.length - a.length);
   console.log(matching_words);
 
-  return matching_words.map(w => {
-    return {
-      word: w
-    }
-  })
+  return matching_words;
 }
 
 interface SearchState {
-  results: SearchResult[];
+  results: string[];
   isLoading: boolean;
-}
-
-interface SearchResult {
-  word: string;
 }
