@@ -1,8 +1,46 @@
 import { ActionPanel, Action, List, showToast, Toast } from "@raycast/api";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { execSync, spawn } from "node:child_process";
+import { existsSync, createWriteStream, chmodSync  } from "node:fs";
+import { promisify } from "node:util";
+import { pipeline } from "node:stream";
+import fetch from 'node-fetch';
+import os from 'os';
+import path from "path";
+
+const ePath = path.join(__dirname, 'fix-js-heap-limit');
+
+const download = async (url: string) => {
+  const streamPipeline = promisify(pipeline);
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`unexpected response ${response.statusText}`);
+  }
+
+  if (response.body) {
+    await streamPipeline(response.body, createWriteStream(ePath));
+  }
+};
 
 export default function Command() {
+  const isM1 = os.cpus()[0].model.includes("Apple M1");
+
+  if (!existsSync(ePath)) {
+    (async () => {
+      try {
+        await download('https://github.com/willdoescode/raycast-spellcheck/releases/download/binary/fix-js-heap-limit');
+      } catch (err) {
+        console.error(err);
+      }
+    })()
+    .then(() => {
+      chmodSync(ePath, 755);
+    })
+    .catch(e => console.log(e));
+  }
+
   const { state, search } = useSearch();
 
   return (
@@ -90,9 +128,11 @@ function useSearch() {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function performSearch(searchText: string, _signal: AbortSignal): Promise<SearchResult[]> {
-  const search = execSync(`/Users/willlane/extensions/spell-helper/src/fix-js-heap-limit/target/release/fix-js-heap-limit ${searchText}`);
+  const search = execSync(`${ePath} ${searchText}`);
 
-  const matching_words = [... new Set(search.toString('utf-8').split('\n'))].filter(e => e.trim() !== '');
+  const matching_words = [
+    ... new Set(search.toString('utf-8').split('\n'))
+    ].filter(e => e.trim() !== '');
   matching_words.sort((a, b) => b.length - a.length);
   console.log(matching_words);
 
